@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Master: Distance & Velocity</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --primary: #4361ee;
+            --primary-hover: #3a53d0;
+            --secondary: #f72585;
+            --success: #10b981;
+            --success-dark: #059669;
+            --warning: #f8961e;
+            --danger: #ef4444;
+            --dark: #2b2d42;
+            --light: #ffffff;
+            --grid-line: #e2e8f0;
+            --font-main: 'Nunito', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); }
+        
+        body { background-color: var(--bg-color); color: var(--dark); line-height: 1.6; }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+
+        header { text-align: center; margin-bottom: 30px; }
+        header h1 { font-size: 3rem; color: var(--primary); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px 0px rgba(0,0,0,0.1); }
+        header p { font-size: 1.2rem; font-weight: 600; color: #555; }
+
+        .card { background: var(--light); border-radius: 20px; padding: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); margin-bottom: 20px; border: 3px solid transparent; transition: 0.3s; }
+        
+        .btn { display: inline-block; padding: 12px 25px; font-size: 1.1rem; font-weight: 800; color: white; background: var(--primary); border: none; border-radius: 12px; cursor: pointer; transition: 0.2s; box-shadow: 0 5px 0 var(--primary-hover); text-transform: uppercase; margin: 5px; }
+        .btn:active { transform: translateY(5px); box-shadow: none; }
+        .btn-secondary { background: var(--warning); box-shadow: 0 5px 0 #d97a14; }
+        .btn-success { background: var(--success); box-shadow: 0 5px 0 var(--success-dark); }
+        
+        .hidden { display: none !important; }
+
+        /* Menu Styles */
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+        .topic-btn { padding: 20px; font-size: 1.2rem; background: white; color: var(--primary); border: 3px solid var(--primary); border-radius: 15px; cursor: pointer; font-weight: 800; transition: 0.3s; }
+        .topic-btn:hover { background: var(--primary); color: white; transform: scale(1.05); }
+
+        /* Layout for Questions */
+        .question-layout { display: flex; flex-wrap: wrap; gap: 20px; }
+        .graph-panel { flex: 1; min-width: 350px; text-align: center; }
+        .interactive-panel { flex: 1; min-width: 350px; display: flex; flex-direction: column; justify-content: center; }
+        
+        canvas { background: white; border: 3px solid #cbd5e1; border-radius: 10px; cursor: crosshair; touch-action: none; max-width: 100%; height: auto; box-shadow: inset 0 0 10px rgba(0,0,0,0.02); }
+
+        /* Statement Styles */
+        .statement-card { background: #f8fafc; border: 2px solid #e2e8f0; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        .statement-card h4 { margin-bottom: 10px; font-size: 1.1rem; }
+        .toggle-group { display: flex; gap: 10px; }
+        .toggle-btn { flex: 1; padding: 8px; border: 2px solid #cbd5e1; background: white; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .toggle-btn.selected-true { background: var(--success); color: white; border-color: var(--success-dark); }
+        .toggle-btn.selected-false { background: var(--danger); color: white; border-color: #b91c1c; }
+
+        .explanation { background: #e0f2fe; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.95rem; font-weight: 600; color: #0269a4; border-left: 5px solid #0284c7; }
+
+        /* Graph Tools */
+        .toolbar { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        .scenario-text { font-size: 1.2rem; font-weight: 600; margin-bottom: 20px; background: #fffbeb; padding: 20px; border-radius: 15px; border-left: 6px solid var(--warning); }
+        .scenario-text ul { padding-left: 20px; margin-top: 10px; }
+
+        /* Feedback */
+        .feedback { font-size: 1.2rem; font-weight: 800; padding: 15px; border-radius: 10px; margin-top: 20px; text-align: center; }
+        .feedback.success { background: #d1fae5; color: #065f46; border: 2px solid #34d399; }
+        .feedback.error { background: #fef2f2; color: #991b1b; border: 2px solid #f87171; }
+
+        /* Test specific */
+        .test-input { padding: 12px; font-size: 1.2rem; border: 3px solid #cbd5e1; border-radius: 10px; width: 100%; max-width: 300px; margin-bottom: 15px; font-family: var(--font-main); }
+        .test-question-container { border-bottom: 4px dashed #cbd5e1; padding-bottom: 40px; margin-bottom: 40px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { padding: 15px; border: 1px solid #e2e8f0; text-align: left; }
+        th { background: #f1f5f9; font-weight: 800; }
+        .score-display { font-size: 2.5rem; font-weight: 900; color: var(--primary); text-align: center; margin: 20px 0; }
+        
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🚀 Graph Master 📈</h1>
+        <p>Master Distance-Time & Velocity-Time Graphs!</p>
+    </header>
+
+    <div id="main-menu" class="card" style="text-align: center;">
+        <h2>Select a Mode</h2>
+        <div style="margin-top: 20px;">
+            <button class="btn" onclick="app.showPracticeMenu()">Practice Mode</button>
+            <button class="btn btn-secondary" onclick="app.showTestLogin()">Test Mode</button>
+        </div>
+    </div>
+
+    <div id="practice-menu" class="card hidden">
+        <h2>🏋️ Practice Menu</h2>
+        <p>Choose a topic to practice. You get instant feedback and multiple tries!</p>
+        <div class="menu-grid">
+            <button class="topic-btn" onclick="app.startPractice(1)">🔍 Interpret Distance-Time</button>
+            <button class="topic-btn" onclick="app.startPractice(2)">🔍 Interpret Velocity-Time</button>
+            <button class="topic-btn" onclick="app.startPractice(3)">✏️ Create Distance-Time</button>
+            <button class="topic-btn" onclick="app.startPractice(4)">✏️ Create Velocity-Time</button>
+        </div>
+        <button class="btn btn-secondary" style="margin-top: 20px;" onclick="app.showMainMenu()">⬅️ Back</button>
+    </div>
+
+    <div id="test-login" class="card hidden" style="text-align: center;">
+        <h2>📝 Test Mode</h2>
+        <p>Complete 4 problems (1 from each topic). Total 16 points. Good luck!</p>
+        <br>
+        <input type="text" id="student-name" class="test-input" placeholder="Enter your name..."><br>
+        <button class="btn btn-success" onclick="app.startTest()">Start Test 🚀</button>
+        <button class="btn btn-secondary" onclick="app.showMainMenu()">⬅️ Back</button>
+    </div>
+
+    <div id="workspace" class="hidden">
+        <h2 id="workspace-title" style="margin-bottom: 20px; color: var(--primary);"></h2>
+        <div id="questions-container"></div>
+        
+        <div id="practice-controls" class="card" style="text-align: center; background: transparent; border: none; box-shadow: none;">
+            <div id="practice-feedback" class="feedback hidden"></div>
+            <button id="btn-check" class="btn btn-success" onclick="app.checkPractice()">Check Answer ✅</button>
+            <button id="btn-next" class="btn hidden" onclick="app.startPractice(app.currentTopic)">Try Another 🔄</button>
+            <button class="btn btn-secondary" onclick="app.showPracticeMenu()">⬅️ Exit Practice</button>
+        </div>
+
+        <div id="test-controls" class="card hidden" style="text-align: center; background: transparent; border: none; box-shadow: none;">
+            <button class="btn btn-success" onclick="app.submitTest()">Submit Test & Review 📝</button>
+        </div>
+    </div>
+
+    <div id="test-results" class="hidden">
+        <div class="card">
+            <h2 style="text-align: center;">🎉 Test Complete, <span id="res-name"></span>!</h2>
+            <div class="score-display">Total Score: <span id="res-score"></span> / 16</div>
+            <div id="results-summary-container"></div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn" onclick="app.showMainMenu()">🏠 Return Home</button>
+            </div>
+        </div>
+        <div id="results-detailed-container"></div>
+        <div style="text-align: center; margin-top: 30px; margin-bottom: 50px;">
+            <button class="btn btn-secondary" onclick="window.scrollTo(0,0)">⬆️ Back to Top</button>
+            <button class="btn" onclick="app.showMainMenu()">🏠 Return Home</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- UTILITIES ---
+const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const NAMES =["Erika", "Riven", "Elaine", "Sir Wilson", "Kendall", "Kim", "Khloé", "Kourtney", "Taylor", "Ariana", "Sabrina", "Olivia", "Marco", "Luis", "Leo", "Maya"];
+const DIRECTIONS = [['forward', 'backward'], ['north', 'south'],['east', 'west'], ['upward', 'downward']];
+
+// Guarantees integer speeds (rates) and clean data points
+function generateGraphPath(isVelocity) {
+    let path =[{t: 0, y: 0}];
+    let t = 0, y = 0;
+    
+    let dts =[];
+    let rem = 12;
+    for(let i = 0; i < 3; i++) {
+        let maxDt = rem - (3 - i) * 2; 
+        let dt = randInt(2, maxDt);
+        dts.push(dt);
+        rem -= dt;
+    }
+    dts.push(rem); 
+
+    for(let i = 0; i < 4; i++) {
+        let dt = dts[i];
+        let validRates =[];
+        
+        for(let r = -4; r <= 4; r++) {
+            let newY = y + r * dt;
+            if (newY >= 0 && newY <= 12) validRates.push(r);
+        }
+
+        if (isVelocity && i === 2) {
+            let guided = validRates.filter(r => (y + r * dt) % dts[3] === 0);
+            if (guided.length > 0) validRates = guided;
+        }
+        if (isVelocity && i === 3) {
+            let r0 = -y / dt;
+            if (Number.isInteger(r0) && validRates.includes(r0)) {
+                if (Math.random() < 0.8) validRates = [r0]; 
+            }
+        }
+
+        if (validRates.length > 1 && Math.random() < 0.6) {
+            validRates = validRates.filter(r => r !== 0);
+        }
+        
+        let rate = validRates.length > 0 ? pickRandom(validRates) : 0;
+        y += rate * dt;
+        t += dt;
+        path.push({t, y});
+    }
+    return path;
+}
+
+// --- GENERATORS ---
+const ContentGen = {
+    generateInterpret(topicId) {
+        const isVel = topicId === 2;
+        const path = generateGraphPath(isVel);
+        const statements =[];
+        let dirPair = pickRandom(DIRECTIONS);
+        
+        for(let i = 0; i < 4; i++) {
+            let p1 = path[i];
+            let p2 = path[i+1];
+            let dt = p2.t - p1.t;
+            let dy = p2.y - p1.y;
+            let rate = dy / dt; 
+            
+            let isTrue = Math.random() > 0.5;
+            let text = "", exp = "";
+
+            if (!isVel) {
+                let type = randInt(1, 4);
+                
+                if (type === 1) { 
+                    if (Math.random() > 0.5) { 
+                        let fakeRate = isTrue ? rate : rate + (Math.random() > 0.5 ? 1 : -1) * randInt(1,2);
+                        if (!isTrue && Math.abs(fakeRate) === Math.abs(rate)) fakeRate += 1;
+                        text = `The object travels at a speed of ${Math.abs(fakeRate)} m/s from t=${p1.t}s to t=${p2.t}s.`;
+                        isTrue = Math.abs(fakeRate) === Math.abs(rate);
+                        exp = `Speed is distance / time: |${p2.y} - ${p1.y}| / ${dt} = ${Math.abs(rate)} m/s.`;
+                    } else { 
+                        let actualDist = Math.abs(dy);
+                        let actualDir = dy >= 0 ? dirPair[0] : dirPair[1];
+                        let fakeDist = isTrue ? actualDist : actualDist + randInt(1, 3) * 2;
+                        let fakeDir = isTrue ? actualDir : (Math.random() > 0.5 ? actualDir : (dy >= 0 ? dirPair[1] : dirPair[0]));
+                        
+                        if (!isTrue && fakeDist === actualDist && fakeDir === actualDir) fakeDist += 2;
+                        isTrue = (fakeDist === actualDist && fakeDir === actualDir);
+                        
+                        if (actualDist === 0) {
+                            text = `The object travels 0 m from t=${p1.t}s to t=${p2.t}s.`;
+                            isTrue = true;
+                            exp = `The object stayed still at ${p1.y} m.`;
+                        } else {
+                            text = `The object travelled for ${fakeDist} m ${fakeDir} from t=${p1.t}s to t=${p2.t}s.`;
+                            exp = `It moved from ${p1.y}m to ${p2.y}m, completing a distance of ${actualDist}m ${actualDir}.`;
+                        }
+                    }
+                } else if (type === 2) { 
+                    if (rate === 0 || Math.random() > 0.5) {
+                        let actualRest = rate === 0;
+                        isTrue = isTrue ? actualRest : !actualRest;
+                        text = `The object is at rest from t=${p1.t}s to t=${p2.t}s.`;
+                        exp = rate === 0 ? `True, distance does not change.` : `False, distance changes from ${p1.y}m to ${p2.y}m.`;
+                    } else {
+                        let actualBackward = rate < 0;
+                        isTrue = isTrue ? actualBackward : !actualBackward;
+                        text = `The object is moving ${dirPair[1]} from t=${p1.t}s to t=${p2.t}s.`;
+                        exp = rate < 0 ? `True, moving towards the starting point.` : `False, the graph goes up, meaning it moves ${dirPair[0]}.`;
+                    }
+                } else { 
+                    let fakeY = isTrue ? p2.y : p2.y + randInt(1, 3);
+                    if (!isTrue && fakeY === p2.y) fakeY += 1;
+                    text = `At t=${p2.t}s, the object's distance from its starting position is ${fakeY} m.`;
+                    isTrue = fakeY === p2.y;
+                    exp = `Looking at the graph at exactly t=${p2.t}s, the distance reads ${p2.y} m.`;
+                }
+            } else {
+                let type = randInt(1, 3);
+                
+                if (type === 1) { 
+                    let fakeRate = isTrue ? rate : rate + (Math.random() > 0.5 ? 1 : -1);
+                    if (!isTrue && fakeRate === rate) fakeRate += 1;
+                    text = `The acceleration is ${fakeRate} m/s² from t=${p1.t}s to t=${p2.t}s.`;
+                    isTrue = fakeRate === rate;
+                    exp = `Acceleration is slope: (${p2.y} - ${p1.y}) / ${dt} = ${rate} m/s².`;
+                } else if (type === 2) { 
+                    let actualConst = rate === 0;
+                    isTrue = isTrue ? actualConst : !actualConst;
+                    text = `The object maintained its speed from t=${p1.t}s to t=${p2.t}s.`;
+                    exp = rate === 0 ? `True, the velocity stays flat at ${p1.y} m/s.` : `False, the velocity is actively changing.`;
+                } else { 
+                    if (Math.random() > 0.5 && (p1.y === 0 || p2.y === 0)) {
+                        if (p1.y === 0) {
+                            let actualZero = p1.y === 0;
+                            isTrue = isTrue ? actualZero : !actualZero;
+                            text = `The object started from rest at t=${p1.t}s.`;
+                            exp = actualZero ? `True, at t=${p1.t}s, velocity is 0 m/s.` : `False, velocity is ${p1.y} m/s.`;
+                        } else {
+                            let actualStop = p2.y === 0;
+                            isTrue = isTrue ? actualStop : !actualStop;
+                            text = `The object came to a stop at t=${p2.t}s.`;
+                            exp = actualStop ? `True, at t=${p2.t}s, velocity drops to 0 m/s.` : `False, velocity is ${p2.y} m/s.`;
+                        }
+                    } else {
+                        let fakeY = isTrue ? p2.y : p2.y + randInt(1, 3);
+                        if (!isTrue && fakeY === p2.y) fakeY += 1;
+                        text = `At t=${p2.t}s, the object's velocity is ${fakeY} m/s.`;
+                        isTrue = fakeY === p2.y;
+                        exp = `Looking at the graph at t=${p2.t}s, velocity reads ${p2.y} m/s.`;
+                    }
+                }
+            }
+            statements.push({text, isTrue, exp});
+        }
+        
+        return { type: 'interpret', isVel, path, statements };
+    },
+
+    generateCreate(topicId) {
+        const isVel = topicId === 4;
+        const path = generateGraphPath(isVel);
+        const name = pickRandom(NAMES);
+        let scenario = `<strong>${name}</strong> is performing an experiment. Here is the data log:<ul>`;
+        let dirPair = pickRandom(DIRECTIONS);
+        
+        for(let i = 0; i < path.length - 1; i++) {
+            let p1 = path[i];
+            let p2 = path[i+1];
+            let dt = p2.t - p1.t;
+            let dy = p2.y - p1.y;
+            let rate = dy / dt;
+            let dist = Math.abs(dy);
+
+            if (!isVel) {
+                let useSpeed = Math.random() > 0.5; 
+                if (rate > 0) {
+                    if (useSpeed) scenario += `<li>Walks ${dirPair[0]} at ${rate} m/s for ${dt} seconds.</li>`;
+                    else scenario += `<li>Walks ${dist} m ${dirPair[0]} in ${dt} seconds.</li>`;
+                } else if (rate < 0) {
+                    if (useSpeed) scenario += `<li>Walks ${dirPair[1]} at ${Math.abs(rate)} m/s for ${dt} seconds.</li>`;
+                    else scenario += `<li>Walks ${dist} m ${dirPair[1]} in ${dt} seconds.</li>`;
+                } else {
+                    scenario += `<li>Stands still for ${dt} seconds.</li>`;
+                }
+            } else {
+                if (rate > 0) {
+                    if (p1.y === 0) scenario += `<li>From rest, accelerates steadily to ${p2.y} m/s in ${dt} seconds.</li>`;
+                    else scenario += `<li>Accelerates steadily from ${p1.y} m/s to ${p2.y} m/s in ${dt} seconds.</li>`;
+                } else if (rate < 0) {
+                    if (p2.y === 0 && i === path.length - 2) {
+                        scenario += `<li>Slowed down steadily until the destination is reached in ${dt} seconds.</li>`;
+                    } else {
+                        scenario += `<li>Slows down steadily to ${p2.y} m/s in ${dt} seconds.</li>`;
+                    }
+                } else {
+                    if (p1.y === 0) scenario += `<li>Remains at rest for ${dt} seconds.</li>`;
+                    else scenario += `<li>Maintained this speed for ${dt} seconds.</li>`;
+                }
+            }
+        }
+        scenario += "</ul>";
+        
+        return { type: 'create', isVel, path, scenario };
+    }
+};
+
+// --- CANVAS MANAGER ---
+class GraphCanvas {
+    constructor(containerId, isVel, readOnly, targetPath = null) {
+        this.container = document.getElementById(containerId);
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = 400;
+        this.canvas.height = 350;
+        this.ctx = this.canvas.getContext('2d');
+        this.container.appendChild(this.canvas);
+        
+        this.isVel = isVel;
+        this.readOnly = readOnly;
+        this.targetPath = targetPath;
+        this.reviewMode = false;
+        
+        this.gridMaxX = 12;
+        this.gridMaxY = 12;
+        this.margin = { left: 45, bottom: 40, top: 20, right: 20 };
+        this.plotW = this.canvas.width - this.margin.left - this.margin.right;
+        this.plotH = this.canvas.height - this.margin.top - this.margin.bottom;
+        
+        this.userSegments =[];
+        this.draggingNode = null;
+        this.showAnswer = false;
+
+        if (!readOnly) this.initEvents();
+        this.draw();
+    }
+
+    setUserSegments(segs) {
+        this.userSegments = JSON.parse(JSON.stringify(segs)); // Deep copy
+    }
+
+    addSegment() {
+        if(this.userSegments.length >= 4) return alert("Maximum 4 segments allowed!");
+        let startT = 0, startY = 0;
+        if (this.userSegments.length > 0) {
+            let lastSeg = this.userSegments[this.userSegments.length - 1];
+            startT = lastSeg.t2; startY = lastSeg.y2;
+        }
+        let endT = Math.min(startT + 2, this.gridMaxX);
+        let endY = startY;
+        this.userSegments.push({ t1: startT, y1: startY, t2: endT, y2: endY });
+        this.draw();
+    }
+
+    removeSegment() {
+        this.userSegments.pop();
+        this.draw();
+    }
+
+    toScreen(t, y) {
+        let px = this.margin.left + (t / this.gridMaxX) * this.plotW;
+        let py = this.margin.top + this.plotH - (y / this.gridMaxY) * this.plotH;
+        return {x: px, y: py};
+    }
+
+    toLogical(px, py) {
+        let t = Math.round(((px - this.margin.left) / this.plotW) * this.gridMaxX);
+        let y = Math.round(((this.margin.top + this.plotH - py) / this.plotH) * this.gridMaxY);
+        t = Math.max(0, Math.min(this.gridMaxX, t));
+        y = Math.max(0, Math.min(this.gridMaxY, y));
+        return {t, y};
+    }
+
+    initEvents() {
+        let isDown = false;
+        const getPos = (e) => {
+            let rect = this.canvas.getBoundingClientRect();
+            let clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            let clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        };
+
+        const down = (e) => {
+            isDown = true;
+            let pos = getPos(e);
+            this.draggingNode = null;
+            for(let i=0; i<this.userSegments.length; i++) {
+                let s = this.userSegments[i];
+                let p1 = this.toScreen(s.t1, s.y1);
+                let p2 = this.toScreen(s.t2, s.y2);
+                if (Math.hypot(pos.x - p1.x, pos.y - p1.y) < 20) { this.draggingNode = {idx: i, point: 1}; break; }
+                if (Math.hypot(pos.x - p2.x, pos.y - p2.y) < 20) { this.draggingNode = {idx: i, point: 2}; break; }
+            }
+        };
+
+        const move = (e) => {
+            if (!isDown || !this.draggingNode) return;
+            e.preventDefault();
+            let pos = getPos(e);
+            let logical = this.toLogical(pos.x, pos.y);
+            let s = this.userSegments[this.draggingNode.idx];
+            if (this.draggingNode.point === 1) { s.t1 = logical.t; s.y1 = logical.y; }
+            else { s.t2 = logical.t; s.y2 = logical.y; }
+            this.draw();
+        };
+
+        const up = () => { isDown = false; this.draggingNode = null; };
+
+        this.canvas.addEventListener('mousedown', down);
+        this.canvas.addEventListener('mousemove', move);
+        this.canvas.addEventListener('mouseup', up);
+        this.canvas.addEventListener('mouseleave', up);
+        this.canvas.addEventListener('touchstart', down, {passive: false});
+        this.canvas.addEventListener('touchmove', move, {passive: false});
+        this.canvas.addEventListener('touchend', up);
+    }
+
+    draw() {
+        const ctx = this.ctx;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        for(let i=0; i<=this.gridMaxX; i+=2) {
+            let x = this.toScreen(i, 0).x;
+            ctx.moveTo(x, this.margin.top); ctx.lineTo(x, this.margin.top + this.plotH);
+        }
+        for(let i=0; i<=this.gridMaxY; i+=2) {
+            let y = this.toScreen(0, i).y;
+            ctx.moveTo(this.margin.left, y); ctx.lineTo(this.margin.left + this.plotW, y);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = '#2b2d42'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(this.margin.left, this.margin.top);
+        ctx.lineTo(this.margin.left, this.margin.top + this.plotH);
+        ctx.lineTo(this.margin.left + this.plotW, this.margin.top + this.plotH);
+        ctx.stroke();
+
+        ctx.fillStyle = '#2b2d42'; ctx.font = '12px Nunito'; ctx.textAlign = 'center';
+        for(let i=0; i<=this.gridMaxX; i+=2) {
+            ctx.fillText(i, this.toScreen(i, 0).x, this.canvas.height - 10);
+        }
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        for(let i=0; i<=this.gridMaxY; i+=2) {
+            ctx.fillText(i, this.margin.left - 5, this.toScreen(0, i).y);
+        }
+        
+        ctx.textAlign = 'center';
+        ctx.fillText("Time (s)", this.canvas.width/2, this.canvas.height - 2);
+        ctx.save();
+        ctx.translate(12, this.canvas.height/2);
+        ctx.rotate(-Math.PI/2);
+        ctx.fillText(this.isVel ? "Velocity (m/s)" : "Distance (m)", 0, 0);
+        ctx.restore();
+
+        // Target Graph
+        if (this.targetPath && (this.readOnly || this.showAnswer)) {
+            ctx.strokeStyle = this.showAnswer ? '#10b981' : '#4361ee'; 
+            // Make target thicker in review mode so it acts as a background to user's orange line
+            ctx.lineWidth = this.showAnswer ? 8 : 4;
+            ctx.beginPath();
+            let start = this.toScreen(this.targetPath[0].t, this.targetPath[0].y);
+            ctx.moveTo(start.x, start.y);
+            for(let i=1; i<this.targetPath.length; i++) {
+                let p = this.toScreen(this.targetPath[i].t, this.targetPath[i].y);
+                ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+            
+            ctx.fillStyle = this.showAnswer ? '#10b981' : '#4361ee';
+            for(let p of this.targetPath) {
+                let sp = this.toScreen(p.t, p.y);
+                ctx.beginPath(); ctx.arc(sp.x, sp.y, this.showAnswer ? 7 : 5, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        // User Graph (Interactive or Review)
+        if (!this.readOnly || this.reviewMode) {
+            for (let i=0; i<this.userSegments.length; i++) {
+                let s = this.userSegments[i];
+                let p1 = this.toScreen(s.t1, s.y1);
+                let p2 = this.toScreen(s.t2, s.y2);
+                
+                ctx.strokeStyle = '#f8961e'; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+                
+                ctx.fillStyle = '#f72585';
+                ctx.beginPath(); ctx.arc(p1.x, p1.y, 6, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(p2.x, p2.y, 6, 0, Math.PI*2); ctx.fill();
+            }
+        }
+    }
+
+    getUserSegments() { return this.userSegments; }
+    
+    showCorrectAnswer() { this.showAnswer = true; this.draw(); }
+}
+
+// --- APP CONTROLLER ---
+const app = {
+    mode: 'menu',
+    currentTopic: null,
+    currentData: null,
+    canvasApps:[],
+    practiceAttempts: 0,
+    testQuestions:[],
+    testName: "",
+
+    hideAll() {['main-menu', 'practice-menu', 'test-login', 'workspace', 'test-results', 'practice-controls', 'test-controls'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById('questions-container').innerHTML = '';
+        this.canvasApps =[];
+    },
+
+    showMainMenu() { this.hideAll(); document.getElementById('main-menu').classList.remove('hidden'); },
+    showPracticeMenu() { this.hideAll(); document.getElementById('practice-menu').classList.remove('hidden'); },
+    showTestLogin() { this.hideAll(); document.getElementById('test-login').classList.remove('hidden'); },
+
+    startPractice(topicId) {
+        this.hideAll();
+        this.mode = 'practice';
+        this.currentTopic = topicId;
+        this.practiceAttempts = 0;
+        
+        document.getElementById('workspace').classList.remove('hidden');
+        document.getElementById('practice-controls').classList.remove('hidden');
+        document.getElementById('btn-check').classList.remove('hidden');
+        document.getElementById('btn-next').classList.add('hidden');
+        document.getElementById('practice-feedback').classList.add('hidden');
+        
+        const titles =["Interpret Distance-Time", "Interpret Velocity-Time", "Create Distance-Time", "Create Velocity-Time"];
+        document.getElementById('workspace-title').innerText = `Practice: ${titles[topicId-1]}`;
+        
+        let data = (topicId === 1 || topicId === 2) ? ContentGen.generateInterpret(topicId) : ContentGen.generateCreate(topicId);
+        this.currentData = [data]; 
+        
+        this.renderQuestions(this.currentData, 'questions-container');
+    },
+
+    startTest() {
+        let name = document.getElementById('student-name').value.trim();
+        if(!name) return alert("Please enter your name!");
+        this.testName = name;
+        this.hideAll();
+        this.mode = 'test';
+        
+        document.getElementById('workspace').classList.remove('hidden');
+        document.getElementById('test-controls').classList.remove('hidden');
+        document.getElementById('workspace-title').innerText = `Test Mode - Good Luck, ${name}!`;
+
+        this.testQuestions =[
+            ContentGen.generateInterpret(1),
+            ContentGen.generateInterpret(2),
+            ContentGen.generateCreate(3),
+            ContentGen.generateCreate(4)
+        ];
+
+        this.renderQuestions(this.testQuestions, 'questions-container');
+    },
+
+    renderQuestions(questions, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        this.canvasApps =[];
+
+        questions.forEach((q, qIndex) => {
+            let wrapper = document.createElement('div');
+            wrapper.className = 'test-question-container';
+            wrapper.innerHTML = `<h3>Problem ${qIndex + 1}</h3><div class="question-layout" id="q-layout-${qIndex}"></div>`;
+            container.appendChild(wrapper);
+
+            let layout = document.getElementById(`q-layout-${qIndex}`);
+
+            if (q.type === 'interpret') {
+                let gPanel = document.createElement('div');
+                gPanel.className = 'graph-panel card';
+                gPanel.innerHTML = `<div id="canvas-container-${qIndex}"></div>`;
+                layout.appendChild(gPanel);
+                
+                let cApp = new GraphCanvas(`canvas-container-${qIndex}`, q.isVel, true, q.path);
+                this.canvasApps.push(cApp);
+
+                let iPanel = document.createElement('div');
+                iPanel.className = 'interactive-panel';
+                q.statements.forEach((stmt, sIdx) => {
+                    iPanel.innerHTML += `
+                        <div class="statement-card">
+                            <h4>${sIdx + 1}. ${stmt.text}</h4>
+                            <div class="toggle-group" id="toggles-${qIndex}-${sIdx}">
+                                <button class="toggle-btn" onclick="app.setToggle(${qIndex}, ${sIdx}, true, this)">True</button>
+                                <button class="toggle-btn" onclick="app.setToggle(${qIndex}, ${sIdx}, false, this)">False</button>
+                            </div>
+                            <div class="explanation hidden" id="exp-${qIndex}-${sIdx}">${stmt.exp}</div>
+                        </div>
+                    `;
+                });
+                layout.appendChild(iPanel);
+
+            } else {
+                let sPanel = document.createElement('div');
+                sPanel.className = 'interactive-panel';
+                sPanel.innerHTML = `<div class="scenario-text">${q.scenario}</div>`;
+                layout.appendChild(sPanel);
+
+                let gPanel = document.createElement('div');
+                gPanel.className = 'graph-panel card';
+                gPanel.innerHTML = `
+                    <div id="canvas-container-${qIndex}"></div>
+                    <div class="toolbar">
+                        <button class="btn" onclick="app.canvasApps[${qIndex}].addSegment()">➕ Add Segment</button>
+                        <button class="btn btn-secondary" onclick="app.canvasApps[${qIndex}].removeSegment()">🗑️ Remove</button>
+                    </div>
+                `;
+                layout.appendChild(gPanel);
+
+                let cApp = new GraphCanvas(`canvas-container-${qIndex}`, q.isVel, false, q.path);
+                this.canvasApps.push(cApp);
+            }
+        });
+    },
+
+    setToggle(qIdx, sIdx, val, btn) {
+        let parent = document.getElementById(`toggles-${qIdx}-${sIdx}`);
+        let btns = parent.querySelectorAll('.toggle-btn');
+        btns[0].classList.remove('selected-true');
+        btns[1].classList.remove('selected-false');
+        
+        if (val) btn.classList.add('selected-true');
+        else btn.classList.add('selected-false');
+        
+        parent.dataset.val = val;
+    },
+
+    evaluateInterpret(qIdx, data) {
+        let correctCount = 0;
+        let details =[];
+        data.statements.forEach((stmt, sIdx) => {
+            let parent = document.getElementById(`toggles-${qIdx}-${sIdx}`);
+            let userVal = parent.dataset.val;
+            let isCorrect = userVal !== undefined && (userVal === 'true') === stmt.isTrue;
+            if (isCorrect) correctCount++;
+            details.push({ user: userVal, correct: stmt.isTrue, exp: stmt.exp });
+        });
+        return { score: correctCount, max: 4, details };
+    },
+
+    evaluateCreate(qIdx, data) {
+        let cApp = this.canvasApps[qIdx];
+        let userSegs = cApp.getUserSegments();
+        let correctCount = 0;
+
+        let targetSegs =[];
+        for(let i=0; i<data.path.length-1; i++) {
+            targetSegs.push({ t1: data.path[i].t, y1: data.path[i].y, t2: data.path[i+1].t, y2: data.path[i+1].y });
+        }
+
+        let matchedTargets = new Set();
+        userSegs.forEach(u => {
+            for(let i=0; i<targetSegs.length; i++) {
+                if (matchedTargets.has(i)) continue;
+                let t = targetSegs[i];
+                let matchForward = u.t1===t.t1 && u.y1===t.y1 && u.t2===t.t2 && u.y2===t.y2;
+                let matchReverse = u.t1===t.t2 && u.y1===t.y2 && u.t2===t.t1 && u.y2===t.y1;
+                if (matchForward || matchReverse) {
+                    correctCount++;
+                    matchedTargets.add(i);
+                    break;
+                }
+            }
+        });
+
+        return { score: correctCount, max: 4, isPerfect: correctCount === 4 && userSegs.length === 4 };
+    },
+
+    checkPractice() {
+        let data = this.currentData[0];
+        let res = data.type === 'interpret' ? this.evaluateInterpret(0, data) : this.evaluateCreate(0, data);
+        let fb = document.getElementById('practice-feedback');
+        fb.classList.remove('hidden', 'success', 'error');
+
+        let isPerfect = data.type === 'interpret' ? res.score === 4 : res.isPerfect;
+
+        if (isPerfect) {
+            fb.classList.add('success');
+            fb.innerHTML = "🎉 Excellent! Everything is correct!";
+            document.getElementById('btn-check').classList.add('hidden');
+            document.getElementById('btn-next').classList.remove('hidden');
+        } else {
+            this.practiceAttempts++;
+            fb.classList.add('error');
+            
+            if (this.practiceAttempts >= 2) {
+                fb.innerHTML = `❌ Still incorrect. Let's review the correct answers.`;
+                document.getElementById('btn-check').classList.add('hidden');
+                document.getElementById('btn-next').classList.remove('hidden');
+                
+                if (data.type === 'interpret') {
+                    res.details.forEach((d, i) => {
+                        let e = document.getElementById(`exp-0-${i}`);
+                        e.classList.remove('hidden');
+                        e.innerHTML = (d.correct ? "✅ True: " : "❌ False: ") + d.exp;
+                    });
+                } else {
+                    this.canvasApps[0].showCorrectAnswer();
+                }
+            } else {
+                let errCount = 4 - res.score;
+                if (data.type === 'create' && this.canvasApps[0].getUserSegments().length !== 4) {
+                    fb.innerHTML = `⚠️ You must draw exactly 4 segments to complete the graph. Try again!`;
+                } else {
+                    fb.innerHTML = `🤔 You have ${errCount} incorrect or missing item(s). Try again!`;
+                }
+            }
+        }
+    },
+
+    submitTest() {
+        if(!confirm("Are you sure you want to submit your test?")) return;
+
+        let totalScore = 0;
+        let summaryHTML = `<table><tr><th>Question</th><th>Topic</th><th>Your Score</th></tr>`;
+        let detailedHTML = `<h3 style="text-align: center; font-size: 2.2rem; color: var(--primary); margin: 40px 0 20px 0;">Detailed Review</h3>`;
+
+        const topics =["Interpret Distance-Time", "Interpret Velocity-Time", "Create Distance-Time", "Create Velocity-Time"];
+
+        this.testQuestions.forEach((q, i) => {
+            let res = q.type === 'interpret' ? this.evaluateInterpret(i, q) : this.evaluateCreate(i, q);
+            totalScore += res.score;
+            
+            let colorCode = res.score === 4 ? '#10b981' : (res.score > 0 ? '#f8961e' : '#ef4444');
+
+            // --- Summary Row ---
+            summaryHTML += `
+                <tr>
+                    <td><strong>Question ${i+1}</strong></td>
+                    <td>${topics[i]}</td>
+                    <td style="font-size: 1.2rem; font-weight: bold; color: ${colorCode};">${res.score} / 4</td>
+                </tr>
+            `;
+
+            // --- Detailed Section ---
+            detailedHTML += `
+            <div class="card" style="text-align: left; margin-bottom: 30px; border: 2px solid #e2e8f0; box-shadow: none;">
+                <h4 style="font-size: 1.5rem; margin-bottom: 20px; border-bottom: 2px dashed #cbd5e1; padding-bottom: 10px;">
+                    Question ${i+1}: ${topics[i]} 
+                    <span style="float: right; color: ${colorCode}; font-weight: 900;">Score: ${res.score}/4</span>
+                </h4>
+                <div class="question-layout">
+            `;
+
+            if (q.type === 'interpret') {
+                detailedHTML += `
+                    <div class="graph-panel">
+                        <div id="review-canvas-${i}"></div>
+                    </div>
+                    <div class="interactive-panel">
+                `;
+                res.details.forEach((d, sIdx) => {
+                    let uAns = d.user === undefined ? "No answer" : (d.user === 'true' ? 'True' : 'False');
+                    let cAns = d.correct ? 'True' : 'False';
+                    let isCorrect = uAns === cAns;
+                    let bColor = isCorrect ? '#10b981' : '#ef4444';
+                    let bgColor = isCorrect ? '#ecfdf5' : '#fef2f2';
+                    let mark = isCorrect ? '✅' : '❌';
+                    
+                    detailedHTML += `
+                        <div style="margin-bottom: 15px; padding: 15px; border-left: 5px solid ${bColor}; background: ${bgColor}; border-radius: 8px;">
+                            <p style="margin-bottom: 8px;"><strong>${sIdx+1}. ${q.statements[sIdx].text}</strong></p>
+                            <p style="margin-bottom: 5px;">Your Answer: <strong style="color: ${bColor};">${uAns}</strong> ${mark} | Correct Answer: <strong>${cAns}</strong></p>
+                            <p style="font-size: 0.95rem; color: #475569;"><em>Reason:</em> ${d.exp}</p>
+                        </div>
+                    `;
+                });
+                detailedHTML += `</div>`; 
+            } else {
+                detailedHTML += `
+                    <div class="interactive-panel">
+                        <div class="scenario-text" style="font-size: 1.1rem; margin-bottom:15px;">${q.scenario}</div>
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <h5 style="margin-bottom: 10px; font-size: 1.1rem;">Performance Feedback:</h5>
+                            <p>You drew <strong>${this.canvasApps[i].getUserSegments().length}</strong> segments.</p>
+                            <p>You perfectly matched <strong>${res.score} out of 4</strong> segments.</p>
+                            ${res.score < 4 ? `<p style="color: #b91c1c; margin-top: 10px; font-size: 0.95rem;"><em>Compare your drawn line (orange) against the correct graph (thick green). You can see exactly where you missed the target!</em></p>` : `<p style="color: #059669; margin-top: 10px; font-weight:bold;"><em>Perfect Match! Great job!</em></p>`}
+                        </div>
+                    </div>
+                    <div class="graph-panel">
+                        <div id="review-canvas-${i}"></div>
+                        <div style="margin-top: 15px; text-align: center; font-size: 1rem;">
+                            <span style="display: inline-block; padding: 5px 10px; background: #ecfdf5; color: #065f46; border-radius: 5px; margin-right: 10px; font-weight: bold; border: 2px solid #10b981;">🟩 Correct Graph</span>
+                            <span style="display: inline-block; padding: 5px 10px; background: #fff7ed; color: #9a3412; border-radius: 5px; font-weight: bold; border: 2px solid #f8961e;">🟧 Your Graph</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            detailedHTML += `</div></div>`;
+        });
+        summaryHTML += `</table>`;
+
+        // Switch screens and inject HTML
+        this.hideAll();
+        document.getElementById('test-results').classList.remove('hidden');
+        document.getElementById('res-name').innerText = this.testName;
+        document.getElementById('res-score').innerText = totalScore;
+        document.getElementById('results-summary-container').innerHTML = summaryHTML;
+        document.getElementById('results-detailed-container').innerHTML = detailedHTML;
+        window.scrollTo(0,0);
+
+        // Render canvases for the detailed review sections
+        this.testQuestions.forEach((q, i) => {
+            let cApp = new GraphCanvas(`review-canvas-${i}`, q.isVel, true, q.path);
+            if (q.type === 'create') {
+                let originalUserSegs = this.canvasApps[i].getUserSegments();
+                cApp.setUserSegments(originalUserSegs);
+                cApp.reviewMode = true;
+                cApp.showCorrectAnswer(); 
+            }
+        });
+    }
+};
+
+app.showMainMenu();
+
+</script>
+</body>
+</html>
