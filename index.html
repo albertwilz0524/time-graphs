@@ -82,6 +82,8 @@
         th { background: #f1f5f9; font-weight: 800; }
         .score-display { font-size: 2.5rem; font-weight: 900; color: var(--primary); text-align: center; margin: 20px 0; }
         
+        /* Context Box */
+        .context-box { background: #e0f2fe; color: #0269a4; padding: 12px 20px; border-radius: 10px; margin-bottom: 20px; font-weight: 600; border-left: 5px solid #0284c7; font-size: 1.05rem;}
     </style>
 </head>
 <body>
@@ -215,6 +217,7 @@ const ContentGen = {
         const path = generateGraphPath(isVel);
         const statements =[];
         let dirPair = pickRandom(DIRECTIONS);
+        let context = `Consider an object moving in one dimension (${dirPair[0]}-${dirPair[1]}). Assume moving <strong>${dirPair[0]}</strong> is the positive direction.`;
         
         for(let i = 0; i < 4; i++) {
             let p1 = path[i];
@@ -389,7 +392,7 @@ const ContentGen = {
             statements.push({text, isTrue, exp});
         }
         
-        return { type: 'interpret', isVel, path, statements };
+        return { type: 'interpret', isVel, path, statements, context };
     },
 
     generateCreate(topicId) {
@@ -708,7 +711,13 @@ const app = {
         questions.forEach((q, qIndex) => {
             let wrapper = document.createElement('div');
             wrapper.className = 'test-question-container';
-            wrapper.innerHTML = `<h3>Problem ${qIndex + 1}</h3><div class="question-layout" id="q-layout-${qIndex}"></div>`;
+            
+            let contextHtml = '';
+            if (q.type === 'interpret' && q.context) {
+                contextHtml = `<div class="context-box">ℹ️ <strong>Context:</strong> ${q.context}</div>`;
+            }
+
+            wrapper.innerHTML = `<h3>Problem ${qIndex + 1}</h3>${contextHtml}<div class="question-layout" id="q-layout-${qIndex}"></div>`;
             container.appendChild(wrapper);
 
             let layout = document.getElementById(`q-layout-${qIndex}`);
@@ -911,8 +920,13 @@ const app = {
                     Question ${i+1}: ${topics[i]} 
                     <span style="float: right; color: ${colorCode}; font-weight: 900;">Score: ${res.score}/4</span>
                 </h4>
-                <div class="question-layout">
             `;
+
+            if (q.type === 'interpret' && q.context) {
+                detailedHTML += `<div class="context-box">ℹ️ <strong>Context:</strong> ${q.context}</div>`;
+            }
+
+            detailedHTML += `<div class="question-layout">`;
 
             if (q.type === 'interpret') {
                 detailedHTML += `
